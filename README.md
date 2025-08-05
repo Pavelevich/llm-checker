@@ -348,6 +348,16 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
+## ☕ **Support the Project**
+
+If LLM Checker helped you find the perfect model for your hardware, consider supporting the development:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/pavelchmirenko)
+
+Your support helps maintain and improve the intelligent model selection algorithms!
+
+---
+
 **⭐ Star this repo if LLM Checker helped you find the perfect model for your hardware!**
 
 Made with ❤️ and 🧠 by the LLM Checker team.
