@@ -58,7 +58,8 @@
     "apple-silicon",
     "memory-optimization"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Pavel Chmirenko <pavelchmirenko@gmail.com>",
+  "funding": "https://buymeacoffee.com/pavelchmirenko",
   "license": "MIT",
   "repository": {
     "type": "git",
