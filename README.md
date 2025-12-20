@@ -265,7 +265,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 **Author**
 
-**Pavel Chmirenko** - [GitHub](https://github.com/Pavelevich) | [Email](mailto:developer31f@gmail.com)
+**Pavelevich** - [GitHub](https://github.com/Pavelevich)
 
 ---
 
@@ -276,5 +276,3 @@ If you find LLM Checker useful, please consider:
 - Contributing improvements 🛠️
 - Reporting issues 🐛
 - Sharing with others 📢
-
-**Buy me a coffee:** [buymeacoffee.com/pavelchmirenko](https://buymeacoffee.com/pavelchmirenko)

@@ -385,4 +385,4 @@ llm-checker check --load-plugins
 
 ---
 
-Made with ❤️  by **Pavel Chmirenko** (<developer31f@gmail.com>).
+Made with ❤️ by **Pavelevich**.
