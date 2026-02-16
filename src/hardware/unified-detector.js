@@ -211,6 +211,12 @@ class UnifiedDetector {
             summary.isMultiGPU = primary.info.isMultiGPU;
             summary.speedCoefficient = primary.info.speedCoefficient;
             summary.gpuModel = primary.info.gpus[0]?.name || 'NVIDIA GPU';
+            
+            // Handle CUDA devices with unified memory (like GB10)
+            if (primary.info.hasUnifiedMemory && summary.totalVRAM > 0) {
+                // For unified memory CUDA devices, treat like Metal - effective memory uses system RAM
+                summary.effectiveMemory = Math.round(summary.systemRAM * 0.7);
+            }
         }
         else if (primary?.type === 'rocm' && primary.info) {
             summary.totalVRAM = primary.info.totalVRAM;
@@ -394,7 +400,8 @@ class UnifiedDetector {
             const gpuDesc = summary.isMultiGPU
                 ? `${summary.gpuCount}x ${summary.gpuModel}`
                 : summary.gpuModel;
-            return `${gpuDesc} (${summary.totalVRAM}GB VRAM) + ${summary.cpuModel}`;
+            const memType = (result.primary?.info?.hasUnifiedMemory) ? 'Unified Memory' : 'VRAM';
+            return `${gpuDesc} (${summary.totalVRAM}GB ${memType}) + ${summary.cpuModel}`;
         }
         else if (summary.bestBackend === 'rocm') {
             const gpuDesc = summary.isMultiGPU
