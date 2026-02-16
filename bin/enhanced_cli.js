@@ -3170,8 +3170,16 @@ program
 
             // CPU
             if (hardware.cpu) {
+                // Check if this is Grace Blackwell
+                const isGraceBlackwell = hardware.backends.cuda?.info?.gpus?.[0]?.name?.includes('GB10') &&
+                                          hardware.backends.cuda?.info?.hasUnifiedMemory;
+                
                 console.log(chalk.blue.bold('\nCPU:'));
-                console.log(`  ${hardware.cpu.brand}`);
+                if (isGraceBlackwell) {
+                    console.log(`  ${chalk.green('Grace Blackwell (ARM64 cores)')}`);
+                } else {
+                    console.log(`  ${hardware.cpu.brand}`);
+                }
                 console.log(`  Cores: ${hardware.cpu.cores.logical} (${hardware.cpu.cores.physical} physical)`);
                 console.log(`  SIMD: ${hardware.cpu.capabilities.bestSimd}`);
                 if (hardware.cpu.capabilities.avx512) console.log(chalk.green('  [OK] AVX-512'));
