@@ -267,11 +267,14 @@ class CPUDetector {
                 caps.fma = flags.includes('fma');
                 caps.f16c = flags.includes('f16c');
 
-                // ARM features
+                // ARM features (check both flags and Features fields)
                 if (process.arch === 'arm64') {
-                    caps.neon = flags.includes('asimd') || flags.includes('neon');
-                    caps.sve = flags.includes('sve');
-                    caps.dotprod = flags.includes('asimddp');
+                    // ARM uses 'Features' field (capital F), not 'flags'
+                    const features = cpuInfo.match(/features\s*:\s*(.+)/i)?.[1] || '';
+                    caps.neon = features.includes('asimd') || features.includes('neon') || 
+                               flags.includes('asimd') || flags.includes('neon');
+                    caps.sve = features.includes('sve') || flags.includes('sve');
+                    caps.dotprod = features.includes('asimddp') || flags.includes('asimddp');
                 }
 
             } else if (process.platform === 'win32') {
@@ -314,6 +317,7 @@ class CPUDetector {
         else if (caps.avx512) caps.bestSimd = 'AVX512';
         else if (caps.avx2) caps.bestSimd = 'AVX2';
         else if (caps.avx) caps.bestSimd = 'AVX';
+        else if (caps.sve) caps.bestSimd = 'SVE';
         else if (caps.neon) caps.bestSimd = 'NEON';
         else if (caps.sse4_2) caps.bestSimd = 'SSE4.2';
         else if (caps.sse2) caps.bestSimd = 'SSE2';

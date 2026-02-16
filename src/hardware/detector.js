@@ -41,8 +41,11 @@ class HardwareDetector {
     }
 
     processCPUInfo(cpu) {
+        // Check if this is a Grace Blackwell system (ARM64 with GB10 GPU)
+        let brand = cpu.brand || 'Unknown';
+        
         return {
-            brand: cpu.brand || 'Unknown',
+            brand: brand,
             manufacturer: cpu.manufacturer || 'Unknown',
             family: cpu.family || 'Unknown',
             model: cpu.model || 'Unknown',
@@ -140,8 +143,13 @@ class HardwareDetector {
             };
         }
         
-        // Enhance model detection using device ID when model is generic or missing
+        // Enhance model detection using device ID, name field, or when model is generic
         let enhancedModel = primaryGPU.model || 'Unknown GPU';
+        
+        // Check if name field contains GB10 (systeminformation may have different fields)
+        if (primaryGPU.name && primaryGPU.name.includes('GB10')) {
+            enhancedModel = primaryGPU.name;
+        }
         if (primaryGPU.deviceId && (
             !primaryGPU.model || 
             primaryGPU.model === 'Unknown' || 
@@ -153,10 +161,24 @@ class HardwareDetector {
         // Enhanced VRAM detection using the new normalizeVRAM function
         let vram = this.normalizeVRAM(primaryGPU.vram || 0);
         
+        // Check for NVIDIA unified memory GPUs (GB10) early - before other checks
+        const gpuName = (primaryGPU.name || '').toLowerCase();
+        const gpuModel = (primaryGPU.model || '').toLowerCase();
+        if (gpuName.includes('gb10') || gpuModel.includes('gb10') || gpuName.includes('blackwell') || gpuModel.includes('blackwell')) {
+            // GB10 uses unified memory - use system RAM
+            const totalRAMGB = Math.round(require('os').totalmem() / (1024 ** 3));
+            vram = totalRAMGB;
+        }
+        
         // If VRAM is still 0, try to estimate based on model or handle unified memory
-        if (vram === 0 && primaryGPU.model) {
-            const modelLower = primaryGPU.model.toLowerCase();
-            if (modelLower.includes('apple') || modelLower.includes('unified')) {
+        if (vram === 0 && (primaryGPU.model || primaryGPU.name)) {
+            const modelLower = (primaryGPU.model || primaryGPU.name || '').toLowerCase();
+            // Check for NVIDIA unified memory GPUs (GB10, etc)
+            if (modelLower.includes('gb10') || modelLower.includes('blackwell')) {
+                // Use system RAM for unified memory NVIDIA GPUs
+                const totalRAMGB = Math.round(require('os').totalmem() / (1024 ** 3));
+                vram = totalRAMGB;
+            } else if (modelLower.includes('apple') || modelLower.includes('unified')) {
                 // Apple Silicon uses unified memory - return 0 to indicate this
                 vram = 0;
             } else {

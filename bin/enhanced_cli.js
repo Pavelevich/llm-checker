@@ -737,12 +737,21 @@ function displaySystemInfo(hardware, analysis) {
     const ramColor = hardware.memory.total >= 32 ? chalk.green : hardware.memory.total >= 16 ? chalk.yellow : chalk.red;
     const gpuColor = hardware.gpu.dedicated ? chalk.green : chalk.hex('#FFA500');
 
+    // Detect Grace Blackwell superchip
+    const isGraceBlackwell = hardware.cpu.architecture === 'ARM64' && 
+                              hardware.gpu.model && 
+                              hardware.gpu.model.includes('GB10');
+    
     const lines = [
-        `${chalk.cyan('CPU:')} ${cpuColor(hardware.cpu.brand)} ${chalk.gray(`(${hardware.cpu.cores} cores, ${hardware.cpu.speed}GHz)`)}`,
+        isGraceBlackwell 
+            ? `${chalk.cyan('System:')} ${chalk.green('NVIDIA Grace Blackwell GB10 Superchip')} ${chalk.gray(`(${hardware.cpu.cores} cores, ${hardware.cpu.speed}GHz)`)}`
+            : `${chalk.cyan('CPU:')} ${cpuColor(hardware.cpu.brand)} ${chalk.gray(`(${hardware.cpu.cores} cores, ${hardware.cpu.speed}GHz)`)}`,
         `${chalk.cyan('Architecture:')} ${hardware.cpu.architecture}`,
         `${chalk.cyan('RAM:')} ${ramColor(hardware.memory.total + 'GB')}`,
-        `${chalk.cyan('GPU:')} ${gpuColor(hardware.gpu.model || 'Not detected')}`,
-        `${chalk.cyan('VRAM:')} ${hardware.gpu.vram === 0 && hardware.gpu.model && hardware.gpu.model.toLowerCase().includes('apple') ? 'Unified Memory' : `${hardware.gpu.vram || 'N/A'}GB`}${hardware.gpu.dedicated ? chalk.green(' (Dedicated)') : chalk.hex('#FFA500')(' (Integrated)')}`,
+        ...(isGraceBlackwell ? [] : [`${chalk.cyan('GPU:')} ${gpuColor(hardware.gpu.model || 'Not detected')}`]),
+        ...(isGraceBlackwell 
+            ? [`${chalk.cyan('Shared Memory:')} ${chalk.green(hardware.memory.total + 'GB')} ${chalk.gray('(CPU+GPU unified)')}`]
+            : [`${chalk.cyan('VRAM:')} ${(hardware.gpu.model && (hardware.gpu.model.toLowerCase().includes('apple') || hardware.gpu.model.toLowerCase().includes('gb10') || hardware.gpu.model.toLowerCase().includes('blackwell')) && hardware.gpu.vram > 0) ? hardware.gpu.vram + 'GB Unified Memory' : hardware.gpu.vram === 0 && hardware.gpu.model && hardware.gpu.model.toLowerCase().includes('apple') ? 'Unified Memory' : `${hardware.gpu.vram || 'N/A'}GB`}${hardware.gpu.dedicated ? chalk.green(' (Dedicated)') : chalk.hex('#FFA500')(' (Integrated)')}`])
     ];
 
     const tier = analysis.summary.hardwareTier?.replace('_', ' ').toUpperCase() || 'UNKNOWN';
@@ -3161,8 +3170,16 @@ program
 
             // CPU
             if (hardware.cpu) {
+                // Check if this is Grace Blackwell
+                const isGraceBlackwell = hardware.backends.cuda?.info?.gpus?.[0]?.name?.includes('GB10') &&
+                                          hardware.backends.cuda?.info?.hasUnifiedMemory;
+                
                 console.log(chalk.blue.bold('\nCPU:'));
-                console.log(`  ${hardware.cpu.brand}`);
+                if (isGraceBlackwell) {
+                    console.log(`  ${chalk.green('Grace Blackwell (ARM64 cores)')}`);
+                } else {
+                    console.log(`  ${hardware.cpu.brand}`);
+                }
                 console.log(`  Cores: ${hardware.cpu.cores.logical} (${hardware.cpu.cores.physical} physical)`);
                 console.log(`  SIMD: ${hardware.cpu.capabilities.bestSimd}`);
                 if (hardware.cpu.capabilities.avx512) console.log(chalk.green('  [OK] AVX-512'));

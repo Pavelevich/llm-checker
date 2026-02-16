@@ -59,6 +59,9 @@ class CUDADetector {
      * Get detailed GPU information using nvidia-smi
      */
     getGPUInfo() {
+        const os = require('os');
+        const systemRAMGB = Math.round(os.totalmem() / (1024 ** 3));
+
         const result = {
             gpus: [],
             driver: null,
@@ -66,7 +69,8 @@ class CUDADetector {
             totalVRAM: 0,
             backend: 'cuda',
             isMultiGPU: false,
-            speedCoefficient: 0
+            speedCoefficient: 0,
+            hasUnifiedMemory: false
         };
 
         try {
@@ -123,14 +127,32 @@ class CUDADetector {
 
                 if (parts.length < 10) continue;
 
+                const name = parts[1] || 'Unknown NVIDIA GPU';
+                
+                // Handle unified memory GPUs (GB10, etc) that report [N/A] for memory
+                let memoryTotal, memoryFree, memoryUsed;
+                const memTotalStr = parts[3];
+                
+                if (memTotalStr === '[N/A]' || memTotalStr === 'N/A') {
+                    // Unified memory device - use system RAM
+                    memoryTotal = systemRAMGB;
+                    memoryFree = systemRAMGB;
+                    memoryUsed = 0;
+                    result.hasUnifiedMemory = true;
+                } else {
+                    memoryTotal = Math.round(parseInt(memTotalStr) / 1024) || 0;
+                    memoryFree = Math.round(parseInt(parts[4]) / 1024) || 0;
+                    memoryUsed = Math.round(parseInt(parts[5]) / 1024) || 0;
+                }
+
                 const gpu = {
                     index: parseInt(parts[0]) || 0,
-                    name: parts[1] || 'Unknown NVIDIA GPU',
+                    name: name,
                     uuid: parts[2] || null,
                     memory: {
-                        total: Math.round(parseInt(parts[3]) / 1024) || 0,  // Convert MB to GB
-                        free: Math.round(parseInt(parts[4]) / 1024) || 0,
-                        used: Math.round(parseInt(parts[5]) / 1024) || 0
+                        total: memoryTotal,
+                        free: memoryFree,
+                        used: memoryUsed
                     },
                     computeMode: parts[6] || 'Default',
                     pcie: {
@@ -150,8 +172,9 @@ class CUDADetector {
                         current: parseInt(parts[14]) || 0,
                         max: parseInt(parts[15]) || 0
                     },
-                    capabilities: this.getGPUCapabilities(parts[1]),
-                    speedCoefficient: this.calculateSpeedCoefficient(parts[1], parseInt(parts[3]))
+                    capabilities: this.getGPUCapabilities(name),
+                    speedCoefficient: this.calculateSpeedCoefficient(name, memoryTotal * 1024),
+                    hasUnifiedMemory: result.hasUnifiedMemory
                 };
 
                 result.gpus.push(gpu);
@@ -209,8 +232,16 @@ class CUDADetector {
             architecture: 'Unknown'
         };
 
+        // GB10 (Blackwell - unified memory variant)
+        if (nameLower.includes('gb10')) {
+            capabilities.tensorCores = true;
+            capabilities.bf16 = true;
+            capabilities.fp8 = true;
+            capabilities.computeCapability = '10.0';
+            capabilities.architecture = 'Blackwell';
+        }
         // RTX 50 series (Blackwell)
-        if (nameLower.includes('rtx 50') || nameLower.includes('rtx50')) {
+        else if (nameLower.includes('rtx 50') || nameLower.includes('rtx50')) {
             capabilities.tensorCores = true;
             capabilities.bf16 = true;
             capabilities.fp8 = true;
