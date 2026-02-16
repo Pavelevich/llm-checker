@@ -66,10 +66,11 @@ class DeterministicModelSelector {
         
         // Backend speed constants (K)
         this.backendK = {
-            'metal': 160,    // Apple Metal
-            'cuda': 220,     // NVIDIA CUDA
-            'cpu_x86': 70,   // CPU x86_64
-            'cpu_arm': 90    // CPU ARM64
+            'metal': 160,       // Apple Metal
+            'cuda': 220,        // NVIDIA CUDA (standard)
+            'cuda_highend': 650, // High-end NVIDIA (H100, GB10, A100, etc.)
+            'cpu_x86': 70,      // CPU x86_64
+            'cpu_arm': 90       // CPU ARM64
         };
         
         // Category target speeds (tokens/sec)
@@ -770,7 +771,18 @@ class DeterministicModelSelector {
         // Determine backend
         let backend = 'cpu_x86';
         if (hardware.acceleration.supports_metal) backend = 'metal';
-        else if (hardware.acceleration.supports_cuda) backend = 'cuda';
+        else if (hardware.acceleration.supports_cuda) {
+            // Detect high-end NVIDIA GPUs
+            const gpuName = hardware.gpu.name?.toLowerCase() || '';
+            const isHighEnd = gpuName.includes('h100') || 
+                             gpuName.includes('h200') ||
+                             gpuName.includes('a100') ||
+                             gpuName.includes('gb10') ||
+                             gpuName.includes('grace blackwell') ||
+                             (hardware.gpu.unified && hardware.gpu.vramGB >= 80);
+            
+            backend = isHighEnd ? 'cuda_highend' : 'cuda';
+        }
         else if (hardware.cpu.architecture === 'arm64') backend = 'cpu_arm';
         
         // Base speed calculation
