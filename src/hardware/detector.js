@@ -41,8 +41,11 @@ class HardwareDetector {
     }
 
     processCPUInfo(cpu) {
+        // Check if this is a Grace Blackwell system (ARM64 with GB10 GPU)
+        let brand = cpu.brand || 'Unknown';
+        
         return {
-            brand: cpu.brand || 'Unknown',
+            brand: brand,
             manufacturer: cpu.manufacturer || 'Unknown',
             family: cpu.family || 'Unknown',
             model: cpu.model || 'Unknown',

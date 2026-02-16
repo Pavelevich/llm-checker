@@ -397,6 +397,14 @@ class UnifiedDetector {
         const summary = result.summary;
 
         if (summary.bestBackend === 'cuda') {
+            // Detect Grace Blackwell superchip
+            const isGraceBlackwell = summary.gpuModel && summary.gpuModel.includes('GB10') && 
+                                      result.primary?.info?.hasUnifiedMemory;
+            
+            if (isGraceBlackwell) {
+                return `Grace Blackwell GB10 Superchip (${summary.totalVRAM}GB Shared Memory)`;
+            }
+            
             const gpuDesc = summary.isMultiGPU
                 ? `${summary.gpuCount}x ${summary.gpuModel}`
                 : summary.gpuModel;
