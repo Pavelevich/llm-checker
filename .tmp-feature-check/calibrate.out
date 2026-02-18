@@ -1,0 +1,9 @@
+
+ CALIBRATION ARTIFACTS GENERATED 
+╭────────────────────────────────────────────────────────────────────────
+│ Suite: /Users/pchmirenko/llm-checker/docs/fixtures/calibration/sample-suite.jsonl
+│ Runtime: ollama | Objective: balanced
+│ Models: 2
+│ Execution mode: dry-run
+│ Result: /Users/pchmirenko/llm-checker/.tmp-feature-check/calibration.json
+╰────────────────────────────────────────────────────────────────────────
