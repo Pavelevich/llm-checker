@@ -29,7 +29,8 @@ const TESTS = [
     { name: 'Policy CLI enforcement', file: 'policy-cli-enforcement.js', category: 'Policy' },
     { name: 'Policy engine', file: 'policy-engine.test.js', category: 'Policy' },
     { name: 'Policy audit reporter', file: 'policy-audit-reporter.test.js', category: 'Policy' },
-    { name: 'Policy end-to-end', file: 'policy-e2e-integration.test.js', category: 'Policy' }
+    { name: 'Policy end-to-end', file: 'policy-e2e-integration.test.js', category: 'Policy' },
+    { name: 'Roadmap tools', file: 'roadmap-tools.test.js', category: 'Commands' }
 ];
 
 function runSingleTest(test) {
@@ -37,6 +38,7 @@ function runSingleTest(test) {
     const started = Date.now();
     const result = spawnSync(process.execPath, [scriptPath], {
         encoding: 'utf8',
+        timeout: 120000,
         env: process.env
     });
     const durationMs = Date.now() - started;

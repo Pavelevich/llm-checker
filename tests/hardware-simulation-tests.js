@@ -293,6 +293,7 @@ class HardwareSimulationTest {
 
         const models = Object.entries(MODEL_VARIANTS);
         const scored = [];
+        const effectiveMemory = hardware.summary?.effectiveMemory || 8;
 
         for (const [name, model] of models) {
             const result = this.engine.score(model, hardware, { useCase: 'general' });
@@ -303,7 +304,8 @@ class HardwareSimulationTest {
                 S: result.components.speed,
                 F: result.components.fit,
                 C: result.components.context,
-                tps: result.meta.estimatedTPS
+                tps: result.meta.estimatedTPS,
+                sizeGB: model.size_gb
             });
         }
 
@@ -317,6 +319,44 @@ class HardwareSimulationTest {
         for (const s of scored.slice(0, 5)) {
             const name = s.model.padEnd(22);
             console.log(`${name} | ${String(s.final).padStart(5)} | ${String(s.Q).padStart(2)} | ${String(s.S).padStart(2)} | ${String(s.F).padStart(2)} | ${String(s.C).padStart(2)} | ${s.tps}`);
+        }
+
+        // --- Assertions ---
+
+        // Top-1 model must have a positive final score
+        const top = scored[0];
+        if (top.final <= 0) {
+            this.failures.push({ test: `${hwName} top-1 final > 0`, actual: top.final });
+            this.log(`FAIL: ${hwName} top-1 model (${top.model}) has final=${top.final}, expected > 0`, 'fail');
+        } else {
+            this.log(`PASS: ${hwName} top-1 model (${top.model}) has final=${top.final}`, 'pass');
+        }
+
+        // All score components must be within valid range [0, 100]
+        for (const s of scored) {
+            const components = [s.Q, s.S, s.F, s.C, s.final];
+            const names = ['quality', 'speed', 'fit', 'context', 'final'];
+            for (let i = 0; i < components.length; i++) {
+                if (components[i] < 0 || components[i] > 100) {
+                    this.failures.push({ test: `${hwName}/${s.model} ${names[i]} in [0,100]`, actual: components[i] });
+                    this.log(`FAIL: ${hwName}/${s.model} ${names[i]}=${components[i]} out of range [0,100]`, 'fail');
+                }
+            }
+        }
+
+        // Models significantly exceeding available VRAM should have low fit scores
+        // (effectiveMemory - 2GB headroom) * 1.2 overflow threshold from calculateFitScore
+        const headroom = 2;
+        const overflowThreshold = (effectiveMemory - headroom) * 1.2;
+        for (const s of scored) {
+            if (s.sizeGB > overflowThreshold) {
+                if (s.F > 50) {
+                    this.failures.push({ test: `${hwName}/${s.model} oversized fit penalty`, sizeGB: s.sizeGB, fit: s.F });
+                    this.log(`FAIL: ${hwName}/${s.model} size=${s.sizeGB}GB exceeds ${overflowThreshold.toFixed(1)}GB limit but fit=${s.F} (expected <= 50)`, 'fail');
+                } else {
+                    this.log(`PASS: ${hwName}/${s.model} oversized (${s.sizeGB}GB) correctly penalized with fit=${s.F}`, 'pass');
+                }
+            }
         }
 
         return scored;
