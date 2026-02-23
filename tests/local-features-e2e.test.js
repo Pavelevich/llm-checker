@@ -40,7 +40,28 @@ function assertExitOk(result, context) {
     assert.strictEqual(result.status, 0, `${context}\n${combined}`);
 }
 
+function isOllamaAvailable() {
+    try {
+        const result = spawnSync('curl', ['-s', '-o', '/dev/null', '-w', '%{http_code}', 'http://localhost:11434/api/version'], {
+            encoding: 'utf8',
+            timeout: 5000
+        });
+        return result.stdout && result.stdout.trim() === '200';
+    } catch {
+        return false;
+    }
+}
+
 function run() {
+    if (process.platform !== 'darwin') {
+        console.log('SKIPPED: local-features-e2e requires macOS');
+        return;
+    }
+    if (!isOllamaAvailable()) {
+        console.log('SKIPPED: local-features-e2e requires a running Ollama instance');
+        return;
+    }
+
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'llm-checker-local-e2e-'));
     try {
         const calibrationOutput = path.join(tempDir, 'calibration-result.json');

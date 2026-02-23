@@ -179,6 +179,14 @@ async function testUnifiedWindowsFallbackGpuDetection() {
     const si = require('systeminformation');
     const originalGraphics = si.graphics;
 
+    function restoreGraphics() {
+        try {
+            si.graphics = originalGraphics;
+        } catch (_) {
+            // Ensure restore never throws
+        }
+    }
+
     si.graphics = async () => ({
         controllers: [
             {
@@ -225,9 +233,11 @@ async function testUnifiedWindowsFallbackGpuDetection() {
             description.toLowerCase().includes('rx 7800 xt'),
             `CPU fallback description should include discrete GPU model, got: ${description}`
         );
-    } finally {
-        si.graphics = originalGraphics;
+    } catch (err) {
+        restoreGraphics();
+        throw err;
     }
+    restoreGraphics();
 }
 
 async function run() {
